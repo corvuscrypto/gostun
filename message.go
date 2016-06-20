@@ -91,3 +91,31 @@ func UnMarshal(data []byte) (*Message, error) {
 
 	return msg, nil
 }
+
+//Marshal transforms a message into a byte array
+func Marshal(m *Message) ([]byte, error) {
+	result := make([]byte, 576)
+	//first do the header
+	binary.BigEndian.PutUint16(result[:2], m.MessageType)
+	binary.BigEndian.PutUint16(result[2:4], m.MessageLength)
+	binary.BigEndian.PutUint32(result[4:8], m.Magic)
+	result = append(result[:8], m.TID...)
+
+	//now we do the attributes
+	if m.Attributes != nil {
+		i := 20
+		for t, v := range m.Attributes {
+			length := len(v)
+			binary.BigEndian.PutUint16(result[i:i+2], t)
+			binary.BigEndian.PutUint16(result[i+2:i+4], uint16(len(v)))
+			result = append(result[:i+4], v...)
+			i += 4 + length
+			//if we need to pad, do so
+			if pad := length % 4; pad > 0 {
+				result = append(result, make([]byte, 4-pad)...)
+				i += 4 - pad
+			}
+		}
+	}
+	return result, nil
+}
