@@ -3,6 +3,7 @@ package gostun
 import (
 	"encoding/binary"
 	"errors"
+	"net"
 )
 
 //StunMagic is the constant we expect from all STUN responses/requests in the Magic field
@@ -68,7 +69,9 @@ func UnMarshal(data []byte) (*Message, error) {
 	if msg.Magic != StunMagic {
 		return nil, ErrInvalidRequest
 	}
+
 	msg.TID = data[8:20]
+
 	//if we have leftover data, parse as attributes
 	if length > 20 {
 		msg.Attributes = make(map[uint16][]byte)
@@ -117,4 +120,30 @@ func Marshal(m *Message) ([]byte, error) {
 		binary.BigEndian.PutUint16(result[2:4], uint16(i-20))
 	}
 	return result, nil
+}
+
+func addMappedAddress(m *Message, raddr *net.UDPAddr) {
+	port := make([]byte, 2)
+	binary.BigEndian.PutUint16(port, uint16(raddr.Port))
+	addr := raddr.IP.To4()
+	m.Attributes[AttributeMappedAddress] = append([]byte{0, 1}, append(port, addr...)...)
+}
+
+func addXORMappedAddress(m *Message, raddr *net.UDPAddr) {
+
+	addr := raddr.IP.To4()
+	port := uint16(raddr.Port)
+	xbytes := xorAddress(port, addr)
+	m.Attributes[AttributeXORMappedAddress] = append([]byte{0, 1}, xbytes...)
+
+}
+
+func xorAddress(port uint16, addr []byte) []byte {
+
+	xport := make([]byte, 2)
+	xaddr := make([]byte, 4)
+	binary.BigEndian.PutUint16(xport, port^uint16(StunMagic>>16))
+	binary.BigEndian.PutUint32(xaddr, binary.BigEndian.Uint32(addr)^StunMagic)
+	return append(xport, xaddr...)
+
 }

@@ -17,13 +17,11 @@ type Server struct {
 func (s *Server) serve() {
 	for {
 		var buf = make([]byte, 1024)
-		size, err := s.connection.Read(buf)
+		size, remoteAddr, err := s.connection.ReadFromUDP(buf)
 		if err != nil {
 			continue
 		}
-		_, remoteAddr, err := s.connection.ReadFromUDP(buf[:size])
-		fmt.Println(remoteAddr)
-		parseData(buf[:size])
+		go s.handleData(remoteAddr, buf[:size])
 	}
 }
 
@@ -49,6 +47,28 @@ func NewServer(port int) *Server {
 	return ret
 }
 
-func parseData(data []byte) {
-	fmt.Println(UnMarshal(data))
+func (s *Server) handleData(raddr *net.UDPAddr, data []byte) {
+	msg, err := UnMarshal(data)
+	if err != nil {
+		return
+	}
+	respMsg := new(Message)
+	respMsg.MessageType = BindingSuccessResponse
+	respMsg.Magic = StunMagic
+	respMsg.TID = msg.TID
+	respMsg.Attributes = make(map[uint16][]byte)
+
+	addXORMappedAddress(respMsg, raddr)
+	// addMappedAddress(respMsg, raddr)
+
+	response, err := Marshal(respMsg)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	//send response
+	_, err = s.connection.WriteToUDP(response, raddr)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
