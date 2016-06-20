@@ -21,16 +21,18 @@ func (s *Server) serve() {
 		if err != nil {
 			continue
 		}
-		var data = make([]byte, size)
-		copy(data, buf[:size])
-		fmt.Println("gotem")
+		_, remoteAddr, err := s.connection.ReadFromUDP(buf[:size])
+		fmt.Println(remoteAddr)
+		parseData(buf[:size])
 	}
 }
 
 //Serve initiates a UDP connection that listens on any port for incoming data
 func (s *Server) Serve() {
-	laddr, _ := net.ResolveUDPAddr("udp", "0:"+strconv.Itoa(s.Port))
-	var err error
+	laddr, err := net.ResolveUDPAddr("udp", ":"+strconv.Itoa(s.Port))
+	if err != nil {
+		log.Fatal(err)
+	}
 	s.connection, err = net.ListenUDP("udp", laddr)
 	if err != nil {
 		log.Fatal(err)
@@ -45,4 +47,8 @@ func NewServer(port int) *Server {
 	ret.Registry = new(Registry)
 	ret.Registry.mappings = make(map[string]*Client)
 	return ret
+}
+
+func parseData(data []byte) {
+	fmt.Println(NewMessage(data))
 }
