@@ -76,4 +76,24 @@ func TestMessageUnMarshaling(T *testing.T) {
 		T.Errorf("Incorrect TID")
 	}
 
+	//with AttributeChangeAddress added (2 byte padding)
+	data = []byte{0, 1, 0, 12, 33, 18, 164, 66, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 3, 0, 6,
+		0, 1, 2, 3, 2, 2, 0, 0}
+	msg, _ = UnMarshal(data)
+	if string(msg.Attributes[AttributeChangeAddress]) != string([]byte{0, 1, 2, 3, 2, 2}) {
+		T.Errorf("Incorrect Attribute value")
+	}
+	if msg.Magic != StunMagic {
+		T.Errorf("Incorrect Magic Value")
+	}
+	if msg.MessageLength != 12 {
+		T.Errorf("Incorrect Message Length")
+	}
+	if msg.MessageType != BindingRequest {
+		T.Errorf("Incorrect Message Type")
+	}
+	if string(msg.TID) != string(testTID) {
+		T.Errorf("Incorrect TID")
+	}
+
 }
