@@ -69,7 +69,6 @@ func UnMarshal(data []byte) (*Message, error) {
 		return nil, ErrInvalidRequest
 	}
 	msg.TID = data[8:20]
-
 	//if we have leftover data, parse as attributes
 	if length > 20 {
 		msg.Attributes = make(map[uint16][]byte)
@@ -97,7 +96,6 @@ func Marshal(m *Message) ([]byte, error) {
 	result := make([]byte, 576)
 	//first do the header
 	binary.BigEndian.PutUint16(result[:2], m.MessageType)
-	binary.BigEndian.PutUint16(result[2:4], m.MessageLength)
 	binary.BigEndian.PutUint32(result[4:8], m.Magic)
 	result = append(result[:8], m.TID...)
 
@@ -116,6 +114,7 @@ func Marshal(m *Message) ([]byte, error) {
 				i += 4 - pad
 			}
 		}
+		binary.BigEndian.PutUint16(result[2:4], uint16(i-20))
 	}
 	return result, nil
 }
