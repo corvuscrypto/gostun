@@ -50,5 +50,5 @@ func NewServer(port int) *Server {
 }
 
 func parseData(data []byte) {
-	fmt.Println(NewMessage(data))
+	fmt.Println(UnMarshal(data))
 }
