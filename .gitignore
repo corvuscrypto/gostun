@@ -1,2 +1,4 @@
 #ignore whole application tests
 /tests
+#ignore .out files
+*.out
